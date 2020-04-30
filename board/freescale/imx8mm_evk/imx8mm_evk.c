@@ -35,6 +35,9 @@ DECLARE_GLOBAL_DATA_PTR;
 #define UART_PAD_CTRL	(PAD_CTL_DSE6 | PAD_CTL_FSEL1)
 #define WDOG_PAD_CTRL	(PAD_CTL_DSE6 | PAD_CTL_ODE | PAD_CTL_PUE | PAD_CTL_PE)
 
+#define POWER_PAD_CTRL	(PAD_CTL_DSE1 | PAD_CTL_FSEL3 | PAD_CTL_PUE | PAD_CTL_PE)
+#define GPIO1_14_PAD_CTRL	(PAD_CTL_DSE1 | PAD_CTL_FSEL3 )
+
 static iomux_v3_cfg_t const uart_pads[] = {
 	IMX8MM_PAD_UART2_RXD_UART2_RX | MUX_PAD_CTRL(UART_PAD_CTRL),
 	IMX8MM_PAD_UART2_TXD_UART2_TX | MUX_PAD_CTRL(UART_PAD_CTRL),
@@ -54,6 +57,14 @@ static iomux_v3_cfg_t const qspi_pads[] = {
 	IMX8MM_PAD_NAND_DATA01_QSPI_A_DATA1 | MUX_PAD_CTRL(QSPI_PAD_CTRL),
 	IMX8MM_PAD_NAND_DATA02_QSPI_A_DATA2 | MUX_PAD_CTRL(QSPI_PAD_CTRL),
 	IMX8MM_PAD_NAND_DATA03_QSPI_A_DATA3 | MUX_PAD_CTRL(QSPI_PAD_CTRL),
+};
+
+static iomux_v3_cfg_t const power_pads[] = {
+	IMX8MM_PAD_GPIO1_IO13_GPIO1_IO13 | MUX_PAD_CTRL(POWER_PAD_CTRL),
+	//IMX8MM_PAD_GPIO1_IO14_GPIO1_IO14| MUX_PAD_CTRL(GPIO1_14_PAD_CTRL),
+	//IMX8MM_PAD_GPIO1_IO15_GPIO1_IO15| MUX_PAD_CTRL(POWER_PAD_CTRL),
+	IMX8MM_PAD_SAI3_RXFS_GPIO4_IO28| MUX_PAD_CTRL(POWER_PAD_CTRL),
+	IMX8MM_PAD_SAI3_TXD_GPIO5_IO1| MUX_PAD_CTRL(POWER_PAD_CTRL),
 };
 
 int board_qspi_init(void)
@@ -171,10 +182,20 @@ int ft_board_setup(void *blob, bd_t *bd)
 #endif
 
 #ifdef CONFIG_FEC_MXC
+/*
 #define FEC_RST_PAD IMX_GPIO_NR(4, 22)
 static iomux_v3_cfg_t const fec1_rst_pads[] = {
 	IMX8MM_PAD_SAI2_RXC_GPIO4_IO22 | MUX_PAD_CTRL(NO_PAD_CTRL),
+};*/
+//hyt modify
+#define FEC_RST_PAD IMX_GPIO_NR(3, 25)
+static iomux_v3_cfg_t const fec1_rst_pads[] = {
+	IMX8MM_PAD_SAI5_MCLK_GPIO3_IO25 | MUX_PAD_CTRL(NO_PAD_CTRL),
 };
+
+
+
+
 
 static void setup_iomux_fec(void)
 {
@@ -391,6 +412,148 @@ int board_ehci_usb_phy_mode(struct udevice *dev)
 
 #endif
 
+//hyt modify
+#define GT_POWER_PAD		IMX_GPIO_NR(1, 13)
+//#define EXT3V3_PAD			IMX_GPIO_NR(1, 14)
+//#define EXT5V_PAD			IMX_GPIO_NR(1, 15)
+
+#define LET_SLEEP_PAD		IMX_GPIO_NR(4, 28)
+#define LET_RESET_PAD		IMX_GPIO_NR(5, 1)
+
+
+void power_control(void)
+{
+	imx_iomux_v3_setup_multiple_pads(power_pads, ARRAY_SIZE(power_pads));
+
+	gpio_request(GT_POWER_PAD, "gt power");
+	gpio_direction_output(GT_POWER_PAD, 1);
+
+	//gpio_request(EXT3V3_PAD, "3v3_pover");
+	//gpio_direction_output(EXT3V3_PAD, 1);
+
+	//gpio_request(EXT5V_PAD, "5v_power");
+	//gpio_direction_output(EXT5V_PAD, 1);
+
+	gpio_request(LET_SLEEP_PAD, "LTE SLEEP");
+	gpio_direction_output(LET_SLEEP_PAD, 1);
+
+	gpio_request(LET_RESET_PAD, "LTE reset");
+	gpio_direction_output(LET_RESET_PAD, 1);
+
+	printf("[HYT DEBUG] set power to 1\n");
+}
+
+
+#define HC595_CLK		IMX_GPIO_NR(3, 22)
+#define HC595_SDA		IMX_GPIO_NR(3, 23)
+#define HC595_LT			IMX_GPIO_NR(3, 24)
+
+#define HC595_PAD_CTRL	(PAD_CTL_DSE1 | PAD_CTL_FSEL3 | PAD_CTL_PUE | PAD_CTL_PE)
+
+static iomux_v3_cfg_t const HC595_pads[] = {
+
+	IMX8MM_PAD_SAI5_RXD1_GPIO3_IO22 | MUX_PAD_CTRL(HC595_PAD_CTRL),   //CLK
+	IMX8MM_PAD_SAI5_RXD2_GPIO3_IO23| MUX_PAD_CTRL(HC595_PAD_CTRL),  //SDA
+	IMX8MM_PAD_SAI5_RXD3_GPIO3_IO24| MUX_PAD_CTRL(HC595_PAD_CTRL),     //LT
+
+};
+
+
+#define NMEA_LED_RED		(0x1 << 0)
+#define NMEA_LED_GREEN		(0x2 << 0)
+#define NMEA_LED_OFF		(0x3 << 0)
+#define LAN4_LED_ON			(0x0 << 0)
+
+#define WIFI1_LED_ON		0x0
+#define WIFI1_LED_RED		(0x1 << 2)
+#define WIFI1_LED_GREEN		(0x2 << 2)
+#define WIFI1_LED_OFF		(0x3 << 2)
+
+#define WIFI2_LED_ON		0x0
+#define WIFI2_LED_RED		(0x1 << 4)
+#define WIFI2_LED_GREEN		(0x2 << 4)
+#define WIFI2_LED_OFF		(0x3 << 4)
+
+#define LED_4G_ON			(0x1 << 6)
+#define LED_3G_ON			(0x1 << 7)
+
+#define LAN1_LED_ON			0x0
+#define LAN1_LED_RED		(0x1 << 0)
+#define LAN1_LED_GREEN		(0x2 << 0)
+#define LAN1_LED_OFF		(0x3 << 0)
+
+#define LAN2_LED_ON			0x0
+#define LAN2_LED_RED		(0x1 << 2)
+#define LAN2_LED_GREEN		(0x2 << 2)
+#define LAN2_LED_OFF		(0x3 << 2)
+
+
+#define LAN3_LED_ON			0x0
+#define LAN3_LED_RED		(0x1 << 4)
+#define LAN3_LED_GREEN		(0x2 << 4)
+#define LAN3_LED_OFF		(0x3 << 4)
+
+
+#define LAN4_LED_ON			0x0
+#define LAN4_LED_RED		(0x1 << 6)
+#define LAN4_LED_GREEN		(0x2 << 6)
+#define LAN4_LED_OFF		(0x3 << 6)
+
+
+
+
+static void  hc595_write(int data)
+{
+	int u8i,temp;
+
+	for(u8i = 0; u8i<8; u8i++){
+
+		//gpio_set_value(HC595_CLK, 0);//时钟线低电平
+		gpio_direction_output(HC595_CLK, 0);
+
+
+		temp = data & 0x80;
+		//printf("temp= %0x \n",temp);
+		if( temp == 0x80){
+			//gpio_set_value(HC595_SDA, 1);
+			gpio_direction_output(HC595_SDA,1);
+			//printf("output 1 \n");
+		}else{
+			gpio_direction_output(HC595_SDA,0);
+			//gpio_set_value(HC595_SDA, 0);
+			//printf("output 0 \n");
+		}
+		udelay(5000); //5ms
+		data = data << 1;
+		//gpio_set_value(HC595_CLK, 1);
+		gpio_direction_output(HC595_CLK,1);
+		udelay(5000);//5ms
+	}
+
+	gpio_direction_output(HC595_LT,0);
+	//gpio_set_value(HC595_LT, 0);
+	udelay(5000);
+	gpio_direction_output(HC595_LT,1);
+	//gpio_set_value(HC595_LT, 1);
+	return 1;
+}
+
+
+
+static init_74hc595(void)
+{
+	int temp;
+
+	imx_iomux_v3_setup_multiple_pads(HC595_pads, ARRAY_SIZE(HC595_pads));
+
+	gpio_request(HC595_CLK, "clk");
+	gpio_request(HC595_SDA, "sda");
+	gpio_request(HC595_LT, "lt");
+
+	hc595_write(0);
+	hc595_write(0);
+}
+
 int board_init(void)
 {
 #ifdef CONFIG_USB_TCPC
@@ -409,6 +572,9 @@ int board_init(void)
 	board_qspi_init();
 #endif
 
+	power_control();
+
+	init_74hc595();
 	return 0;
 }
 

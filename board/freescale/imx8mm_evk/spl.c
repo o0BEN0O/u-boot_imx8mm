@@ -73,6 +73,22 @@ static iomux_v3_cfg_t const usdhc2_pads[] = {
 	IMX8MM_PAD_SD2_RESET_B_GPIO2_IO19 | MUX_PAD_CTRL(USDHC_GPIO_PAD_CTRL),
 };
 
+#define POWER_PAD_CTRL	(PAD_CTL_DSE6 | PAD_CTL_HYS | PAD_CTL_PUE |PAD_CTL_PE | PAD_CTL_FSEL2)
+//(PAD_CTL_DSE1 | PAD_CTL_FSEL3 | PAD_CTL_PUE | PAD_CTL_PE)
+//#define GPIO1_14_PAD_CTRL	(PAD_CTL_DSE1 | PAD_CTL_FSEL3 )
+
+static iomux_v3_cfg_t const power_pads[] = {
+	IMX8MM_PAD_GPIO1_IO08_GPIO1_IO8| MUX_PAD_CTRL(POWER_PAD_CTRL),
+	IMX8MM_PAD_GPIO1_IO14_GPIO1_IO14| MUX_PAD_CTRL(POWER_PAD_CTRL),
+	IMX8MM_PAD_GPIO1_IO15_GPIO1_IO15| MUX_PAD_CTRL(POWER_PAD_CTRL),
+};
+
+
+
+
+
+
+
 /*
  * The evk board uses DAT3 to detect CD card plugin,
  * in u-boot we mux the pin to GPIO when doing board_mmc_getcd.
@@ -217,6 +233,28 @@ int board_fit_config_name_match(const char *name)
 }
 #endif
 
+#define LED_POWER_PAD 				IMX_GPIO_NR(1, 8)
+#define EXT3V3_PAD			IMX_GPIO_NR(1, 14)
+#define EXT5V_PAD			IMX_GPIO_NR(1, 15)
+void led_power(void)
+{
+	imx_iomux_v3_setup_multiple_pads(power_pads, ARRAY_SIZE(power_pads));
+
+	gpio_request(EXT3V3_PAD, "3v3_pover");
+	gpio_direction_output(EXT3V3_PAD, 1);
+
+	gpio_request(EXT5V_PAD, "5v_power");
+	gpio_direction_output(EXT5V_PAD, 1);
+
+
+	gpio_request(LED_POWER_PAD, "led power");
+	gpio_direction_output(LED_POWER_PAD, 1);
+
+	printf("[HYT DEBUG] power on led \n");
+}
+
+
+
 void board_init_f(ulong dummy)
 {
 	int ret;
@@ -247,6 +285,8 @@ void board_init_f(ulong dummy)
 	setup_i2c(0, CONFIG_SYS_I2C_SPEED, 0x7f, &i2c_pad_info1);
 
 	power_init_board();
+
+	led_power(); //hyt modify
 
 	/* DDR initialization */
 	spl_dram_init();
