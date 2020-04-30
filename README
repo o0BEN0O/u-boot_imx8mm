@@ -5142,3 +5142,59 @@ Notes:
   u-boot mailing list. Bigger patches will be moderated. If they are
   reasonable and not too big, they will be acknowledged. But patches
   bigger than the size limit should be avoided.
+
+Build uboot for i.MX8MM LPDDR4 EVK
+git clone https://source.codeaurora.org/external/imx/uboot-imx
+cd uboot-imx
+git tag  //to get tag lists (latest is 4.19.35_1.1.0
+git checkout rel_imx_4.14.98_2.0.0_ga
+git status
+source /opt/fsl-imx-wayland/4.14-sumo/environment-setup-aarch64-poky-linux
+make imx8mm_evk_defconfig
+make
+After build done, you will find
+u-boot-nodtb.bin
+spl/u-boot-spl.bin
+arch/arm/dts/fsl-imx8mm-evk.dtb
+
+Get firmware and Extract
+wget http://www.freescale.com/lgfiles/NMG/MAD/YOCTO/firmware-imx-8.1.bin
+chmod +x firmware-imx-8.1.bin
+./firmware-imx-8.1.bin --auto-accept
+
+Build ATF
+git clone https://source.codeaurora.org/external/imx/imx-atf
+cd imx-atf
+git tag
+git checkout rel_imx_4.14.98_2.0.0_ga
+source /opt/fsl-imx-wayland/4.14-sumo/environment-setup-aarch64-poky-linux
+make clean PLAT=imx8mm
+LDFLAGS="" make PLAT=imx8mm
+After build done, you will find
+build/imx8mm/release/bl31.bin
+
+
+git clone https://source.codeaurora.org/external/imx/imx-mkimage
+cd imx-mkimage
+git tag
+git checkout rel_imx_4.14.98_2.0.0_ga
+Note: imx-mkimage is for Host side.
+Please make sure not in the cross compile environment.
+Ex: Open a new terminal.
+uboot:
+cp u-boot-nodtb.bin imx-mkimage/iMX8M/
+cp spl/u-boot-spl.bin imx-mkimage/iMX8M/
+cp arch/arm/dts/fsl-imx8mm-evk.dtb imx-mkimage/iMX8M/
+cp tools/mkimage imx-mkimage/iMX8M/mkimage_uboot
+firmware:
+cp ddr/synopsys/lpddr4_pmu_train_1d_imem.bin imx-mkimage/iMX8M/
+cp ddr/synopsys/lpddr4_pmu_train_1d_dmem.bin imx-mkimage/iMX8M/
+cp ddr/synopsys/lpddr4_pmu_train_2d_imem.bin imx-mkimage/iMX8M/
+cp ddr/synopsys/lpddr4_pmu_train_2d_dmem.bin imx-mkimage/iMX8M/
+atf:
+cp build/imx8mm/release/bl31.bin imx-mkimage/iMX8M/
+Build flash.bin:
+make SOC=iMX8MM clean
+make SOC=iMX8MM flash_spl_uboot
+After build done, you will find
+iMX8M/flash.bin
